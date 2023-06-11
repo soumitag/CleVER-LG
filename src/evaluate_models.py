@@ -530,8 +530,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     seed = 51293
-    data_dir = "../../../data"
-    results_dir = "../../../results/new_results"
+    data_dir = "../data"
+    results_dir = "../results/new_results"
     fig_dir = os.path.join(results_dir, "figures")
 
     labels_index = {0: "ControlLT", 1: "NASHLT", 2: "TCMR"}
