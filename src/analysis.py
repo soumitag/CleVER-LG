@@ -321,7 +321,7 @@ def save_shap_features(results, data, fig_dir, run_name, target_names, seed=5129
     splits = results["split_indices"][median_model]
     train = data.iloc[splits["train"]]
     test = data.iloc[splits["test"]]
-    X_train, X_test, _, _ = preprocess(train, test, features="non_clinical")
+    X_train, X_test, _, _ = preprocess(train, test)
 
     explainer = shap.LinearExplainer(model_, X_train.values, nsamples=10, seed=seed)
     shap_values = explainer.shap_values(X_test)
@@ -369,12 +369,12 @@ def visualize_results(results, target_names, results_dir, fig_dir, run_name):
     roc_curves = results["roc_curves"]
 
     results_df = pd.DataFrame.from_dict({'Accuracy': accuracies, 
-                                         'F1-score': f1_scores, 
-                                         'Precision/PPV': precision_vals, 
-                                         'Recall/Sensitivity/TPR': recall_vals, 
-                                         'Specificity/TNR': specificities,
-                                         'NPV': npv_values}, 
-                                        orient='columns')
+                                     'F1-score': f1_scores, 
+                                     'Precision/PPV': precision_vals, 
+                                     'Recall/Sensitivity/TPR': recall_vals, 
+                                     'Specificity/TNR': specificities,
+                                     'NPV': npv_values}, 
+                                    orient='columns')
 
     median_model = np.argsort(accuracies)[len(accuracies)//2]
     best_model_index = np.argmax(accuracies)
@@ -465,7 +465,7 @@ def visualize_results(results, target_names, results_dir, fig_dir, run_name):
     plt.show(block=False)
 
 
-def preprocess(X_train, X_test, features="all"):
+def preprocess(X_train, X_test):
 
     # append clinical data
     clinical_df = read_clinical_data(os.path.join(data_dir, "clinical_info.tsv"))
@@ -489,38 +489,7 @@ def preprocess(X_train, X_test, features="all"):
     X_train.fillna(0, inplace=True)
     X_test.fillna(0, inplace=True)
 
-    # filter features
-    clinical_variables = ["recipient_age", "Hgb", "ALP", "ALT", "AST", "Creatinine", "sex_recoded", 
-                          "Alcohol", "Autoimmune", "HBV", "HCV", "NASH", "NASH/HPS", "PBC", "PSC", 
-                          "alpha 1 antitrypsine deficiency"]
-
-    if features == "all":
-        return X_train, X_test, y_train, y_test
-
-    elif features == "non_clinical":
-        # remove all clinical
-        present_clinical_cols = []
-        for c in clinical_variables:
-            if c in X_train.columns:
-                present_clinical_cols.append(c)
-
-        X_train = X_train.drop(columns=present_clinical_cols)
-        X_test = X_test.drop(columns=present_clinical_cols)
-        return X_train, X_test, y_train, y_test
-
-    elif features == "clinical_only":
-        # remove all non-clinical
-        non_clinical_cols = []
-        for c in X_train.columns:
-            if c not in clinical_variables:
-                non_clinical_cols.append(c)
-
-        X_train = X_train.drop(columns=non_clinical_cols)
-        X_test = X_test.drop(columns=non_clinical_cols)
-        return X_train, X_test, y_train, y_test
-
-    else:
-        raise ValueError("Unknown feature type requested")
+    return X_train, X_test, y_train, y_test
 
 
 if __name__ == "__main__":
@@ -531,7 +500,7 @@ if __name__ == "__main__":
 
     seed = 51293
     data_dir = "../../../data"
-    results_dir = "../../../results/new_results"
+    results_dir = "../../../results"
     fig_dir = os.path.join(results_dir, "figures")
 
     labels_index = {0: "ControlLT", 1: "NASHLT", 2: "TCMR"}
@@ -566,7 +535,7 @@ if __name__ == "__main__":
         # X_train, X_test = read_and_split_data(data_dir, "features_raw_counts.tsv", _bootstrap_index, log_transform=True)
         
         train, test = data.iloc[train_index], data.iloc[test_index]
-        X_train, X_test, y_train, y_test = preprocess(train, test, features="non_clinical")
+        X_train, X_test, y_train, y_test = preprocess(train, test)
 
         if classifier == "logistic_l2":
             clf = LogisticRegression(n_jobs=-1, penalty="l2", solver="lbfgs", class_weight="balanced",
